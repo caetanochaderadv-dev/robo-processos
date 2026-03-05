@@ -8,6 +8,22 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+// 🔐 VALIDAÇÃO DE API KEY
+app.use((req, res, next) => {
+
+  if (req.path === "/") {
+    return next()
+  }
+
+  const auth = req.headers.authorization
+
+  if (!auth || auth !== `Bearer ${process.env.ROBOT_API_KEY}`) {
+    return res.status(401).json({ error: "Unauthorized" })
+  }
+
+  next()
+})
+
 app.get("/", (req,res)=>{
   res.send("Robô jurídico funcionando")
 })
@@ -32,9 +48,9 @@ async function consultarPorAdvogado(nome, oabs){
   oabs.forEach(oab => {
 
     resultados.push({
-      advogado:nome,
-      oab:oab.numero + "/" + oab.uf,
-      status:"consulta realizada"
+      advogado: nome,
+      oab: oab.numero + "/" + oab.uf,
+      status: "consulta realizada"
     })
 
   })
@@ -45,6 +61,7 @@ async function consultarPorAdvogado(nome, oabs){
 
 }
 
+// 🚀 ROTA PRINCIPAL DO ROBÔ
 app.post("/consultar-processos", async (req,res)=>{
 
   const { nome, oabs } = req.body
@@ -55,22 +72,7 @@ app.post("/consultar-processos", async (req,res)=>{
 
 })
 
-app.listen(3000, ()=>{
-  console.log("robô rodando na porta 3000")
-})
-
-app.post("/consultar-processos", async (req,res)=>{
-
-const { nome, oabs } = req.body
-
-const resultado = await consultarPorAdvogado(nome,oabs)
-
-res.json(resultado)
-
-})
-
-
-// FUNÇÃO PARA ENVIAR MOVIMENTAÇÕES PARA O CRM
+// 📤 FUNÇÃO PARA ENVIAR MOVIMENTAÇÕES PARA O CRM
 async function enviarMovimentacoes(numeroProcesso, movimentacoes){
 
   const response = await fetch(
@@ -90,9 +92,12 @@ async function enviarMovimentacoes(numeroProcesso, movimentacoes){
   const data = await response.json()
 
   console.log("Movimentações enviadas:", data)
+
 }
 
+// 🌐 PORTA PARA RAILWAY
+const PORT = process.env.PORT || 3000
 
-app.listen(3000, ()=>{
-    console.log("robô rodando na porta 3000")
+app.listen(PORT, ()=>{
+  console.log("robô rodando na porta", PORT)
 })
