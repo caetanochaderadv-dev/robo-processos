@@ -14,15 +14,18 @@ app.get("/", (req,res)=>{
 
 async function consultarPorAdvogado(nome, oabs){
 
-  const browser = await chromium.launch({ headless: true })
+  const browser = await chromium.launch({
+    headless: true,
+    args: ["--no-sandbox","--disable-setuid-sandbox"]
+  })
+
   const page = await browser.newPage()
 
   await page.goto("https://comunica.pje.jus.br/")
   await page.waitForTimeout(5000)
 
-  console.log("Abrindo PJe Comunica")
-
   const html = await page.content()
+
   const $ = cheerio.load(html)
 
   const resultados = []
@@ -42,35 +45,25 @@ async function consultarPorAdvogado(nome, oabs){
 
 app.post("/consultar-processos", async (req,res)=>{
 
-  const { nome, oabs } = req.body
+  try{
 
-  const resultado = await consultarPorAdvogado(nome,oabs)
+    const { nome, oabs } = req.body
 
-  res.json(resultado)
+    const resultado = await consultarPorAdvogado(nome,oabs)
+
+    res.json(resultado)
+
+  }catch(error){
+
+    console.error(error)
+
+    res.status(500).json({
+      erro:"erro ao consultar processos"
+    })
+
+  }
 
 })
-
-// FUNÇÃO PARA ENVIAR MOVIMENTAÇÕES PARA O CRM
-async function enviarMovimentacoes(numeroProcesso, movimentacoes){
-
-  const response = await fetch(
-    "https://oonhemhfkunkqqhsivdg.supabase.co/functions/v1/webhook-movimentacoes",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        numero_processo: numeroProcesso,
-        movimentacoes: movimentacoes
-      })
-    }
-  )
-
-  const data = await response.json()
-
-  console.log("Movimentações enviadas:", data)
-}
 
 const PORT = process.env.PORT || 3000
 
