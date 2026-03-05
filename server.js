@@ -8,22 +8,6 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-// 🔐 VALIDAÇÃO DE API KEY
-app.use((req, res, next) => {
-
-  if (req.path === "/") {
-    return next()
-  }
-
-  const auth = req.headers.authorization
-
-  if (!auth || auth !== `Bearer ${process.env.ROBOT_API_KEY}`) {
-    return res.status(401).json({ error: "Unauthorized" })
-  }
-
-  next()
-})
-
 app.get("/", (req,res)=>{
   res.send("Robô jurídico funcionando")
 })
@@ -34,34 +18,28 @@ async function consultarPorAdvogado(nome, oabs){
   const page = await browser.newPage()
 
   await page.goto("https://comunica.pje.jus.br/")
-
   await page.waitForTimeout(5000)
 
   console.log("Abrindo PJe Comunica")
 
   const html = await page.content()
-
   const $ = cheerio.load(html)
 
   const resultados = []
 
   oabs.forEach(oab => {
-
     resultados.push({
       advogado: nome,
       oab: oab.numero + "/" + oab.uf,
       status: "consulta realizada"
     })
-
   })
 
   await browser.close()
 
   return resultados
-
 }
 
-// 🚀 ROTA PRINCIPAL DO ROBÔ
 app.post("/consultar-processos", async (req,res)=>{
 
   const { nome, oabs } = req.body
@@ -72,7 +50,7 @@ app.post("/consultar-processos", async (req,res)=>{
 
 })
 
-// 📤 FUNÇÃO PARA ENVIAR MOVIMENTAÇÕES PARA O CRM
+// FUNÇÃO PARA ENVIAR MOVIMENTAÇÕES PARA O CRM
 async function enviarMovimentacoes(numeroProcesso, movimentacoes){
 
   const response = await fetch(
@@ -92,10 +70,8 @@ async function enviarMovimentacoes(numeroProcesso, movimentacoes){
   const data = await response.json()
 
   console.log("Movimentações enviadas:", data)
-
 }
 
-// 🌐 PORTA PARA RAILWAY
 const PORT = process.env.PORT || 3000
 
 app.listen(PORT, ()=>{
