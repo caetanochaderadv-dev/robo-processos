@@ -1,74 +1,43 @@
-const express = require("express")
-const cors = require("cors")
-const { chromium } = require("playwright")
-const cheerio = require("cheerio")
+const express = require("express");
+const cors = require("cors");
 
-const app = express()
+const app = express();
 
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
 
-// HEALTH CHECK
 app.get("/", (req, res) => {
-  res.json({ status: "ok", service: "robo-processos" })
-})
+  res.send("API do robo-processos funcionando");
+});
 
-async function consultarPorAdvogado(nome, oabs) {
-
-  const browser = await chromium.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
-  })
-
-  const page = await browser.newPage()
-
-  await page.goto("https://comunica.pje.jus.br/")
-
-  await page.waitForTimeout(4000)
-
-  const html = await page.content()
-
-  const $ = cheerio.load(html)
-
-  const resultados = []
-
-  oabs.forEach(oab => {
-    resultados.push({
-      advogado: nome,
-      oab: `${oab.numero}/${oab.uf}`,
-      status: "consulta realizada"
-    })
-  })
-
-  await browser.close()
-
-  return resultados
-}
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 app.post("/consultar-processos", async (req, res) => {
-
   try {
 
-    const { nome, oabs } = req.body
+    const { nome, oabs } = req.body;
 
-    const resultado = await consultarPorAdvogado(nome, oabs)
-
-    res.json(resultado)
+    res.json({
+      advogado: nome,
+      oabs: oabs,
+      status: "endpoint funcionando"
+    });
 
   } catch (error) {
 
-    console.error(error)
+    console.error(error);
 
     res.status(500).json({
-      erro: "erro ao consultar processos"
-    })
+      erro: "erro interno"
+    });
 
   }
+});
 
-})
-
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`)
-})
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
